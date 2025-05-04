@@ -162,7 +162,6 @@
         return;
       }
       
-      // Validate scores
       if (currentQuestion.includes('(1-10)') && (value < 1 || value > 10)) {
         showError('Please enter a value between 1 and 10');
         return;
@@ -185,13 +184,12 @@
       document.getElementById('progress').textContent = 'Analyzing your sleep patterns...';
       
       try {
-        // Convert string values to numbers
         const numericAnswers = {};
         for (const key in answers) {
           numericAnswers[key] = parseFloat(answers[key]);
         }
 
-        const response = await fetch('https://sleep-backend-5h3l.onrender.com', {
+        const response = await fetch('https://sleep-backend-5h3l.onrender.com/predict', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(numericAnswers)
@@ -209,12 +207,11 @@
           return;
         }
         
-        // Display results
         document.getElementById('rf-result').textContent = 
           `Random Forest Prediction: ${data.RandomForest}`;
         document.getElementById('mlp-result').textContent = 
           `Neural Network Prediction: ${data.NeuralNetwork}`;
-          
+        
         if (data.PredictedQuality) {
           document.getElementById('quality-result').textContent = 
             `Predicted Sleep Quality: ${data.PredictedQuality.toFixed(1)}/10`;
