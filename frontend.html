@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sleep Type Classifier</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    
+    #app {
+      width: 100%;
+      max-width: 600px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 25px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .progress {
+      color: #666;
+      margin-bottom: 15px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    
+    button {
+      background: #4a6fa5;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+    }
+    
+    button:hover {
+      background: #3a5a8c;
+    }
+    
+    #result {
+      display: none;
+    }
+    
+    .result-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 5px;
+    }
+    
+    .error {
+      color: #dc3545;
+      padding: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="card">
+      <h2>🛏️ Sleep Type Classifier</h2>
+      <div class="progress" id="progress">Question 1 of 12</div>
+      
+      <div id="form-container">
+        <div class="form-group">
+          <label id="question-label"></label>
+          <input type="number" id="input" step="any">
+        </div>
+        <button id="submit-btn">Next</button>
+      </div>
+      
+      <div class="error" id="error"></div>
+    </div>
+    
+    <div class="card" id="result">
+      <h3>Your Sleep Analysis</h3>
+      <div class="result-item" id="rf-result"></div>
+      <div class="result-item" id="mlp-result"></div>
+      <div class="result-item" id="quality-result"></div>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      "Age",
+      "Sleep Start Time (0-23)",
+      "Sleep End Time (0-23)",
+      "Total Sleep Hours",
+      "Exercise (minutes/day)",
+      "Caffeine Intake (mg)",
+      "Screen Time Before Bed (minutes)",
+      "Work Hours (hours/day)",
+      "Productivity Score (1-10)",
+      "Mood Score (1-10)",
+      "Stress Level (1-10)",
+      "Sleep Quality (1-10)"
+    ];
+    
+    const answers = {};
+    let currentIndex = 0;
+    
+    // Initialize form
+    document.getElementById('question-label').textContent = questions[currentIndex];
+    updateProgress();
+    
+    // Event listeners
+    document.getElementById('submit-btn').addEventListener('click', nextQuestion);
+    document.getElementById('input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') nextQuestion();
+    });
+    
+    function updateProgress() {
+      document.getElementById('progress').textContent = 
+        `Question ${currentIndex + 1} of ${questions.length}`;
+    }
+    
+    function showError(message) {
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      setTimeout(() => errorEl.style.display = 'none', 3000);
+    }
+    
+    function nextQuestion() {
+      const input = document.getElementById('input');
+      const value = input.value.trim();
+      const currentQuestion = questions[currentIndex];
+      
+      if (!value) {
+        showError('Please enter a value');
+        return;
+      }
+      
+      // Validate scores
+      if (currentQuestion.includes('(1-10)') && (value < 1 || value > 10)) {
+        showError('Please enter a value between 1 and 10');
+        return;
+      }
+      
+      answers[currentQuestion] = value;
+      currentIndex++;
+      input.value = '';
+      
+      if (currentIndex < questions.length) {
+        document.getElementById('question-label').textContent = questions[currentIndex];
+        updateProgress();
+      } else {
+        submitAnswers();
+      }
+    }
+    
+    async function submitAnswers() {
+      document.getElementById('form-container').style.display = 'none';
+      document.getElementById('progress').textContent = 'Analyzing your sleep patterns...';
+      
+      try {
+        // Convert string values to numbers
+        const numericAnswers = {};
+        for (const key in answers) {
+          numericAnswers[key] = parseFloat(answers[key]);
+        }
+
+        const response = await fetch('http://localhost:5000/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(numericAnswers)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          showError(data.error);
+          document.getElementById('form-container').style.display = 'block';
+          return;
+        }
+        
+        // Display results
+        document.getElementById('rf-result').textContent = 
+          `Random Forest Prediction: ${data.RandomForest}`;
+        document.getElementById('mlp-result').textContent = 
+          `Neural Network Prediction: ${data.NeuralNetwork}`;
+          
+        if (data.PredictedQuality) {
+          document.getElementById('quality-result').textContent = 
+            `Predicted Sleep Quality: ${data.PredictedQuality.toFixed(1)}/10`;
+        }
+        
+        document.getElementById('result').style.display = 'block';
+        
+      } catch (error) {
+        console.error('Prediction error:', error);
+        showError('Failed to get predictions. Please try again.');
+        document.getElementById('form-container').style.display = 'block';
+        document.getElementById('progress').textContent = `Question 1 of ${questions.length}`;
+        currentIndex = 0;
+        document.getElementById('question-label').textContent = questions[currentIndex];
+      }
+    }
+  </script>
+</body>
+</html>
