@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sleep Type Classifier</title>
   <style>
     body {
@@ -95,7 +95,7 @@
       <div id="form-container">
         <div class="form-group">
           <label id="question-label"></label>
-          <input type="number" id="input" step="any">
+          <input type="number" id="input" step="any" />
         </div>
         <button id="submit-btn">Next</button>
       </div>
@@ -108,6 +108,7 @@
       <div class="result-item" id="rf-result"></div>
       <div class="result-item" id="mlp-result"></div>
       <div class="result-item" id="quality-result"></div>
+      <div class="result-item" id="light-sleep-info" style="display: none;"></div>
     </div>
   </div>
 
@@ -129,48 +130,45 @@
     
     const answers = {};
     let currentIndex = 0;
-    
-    // Initialize form
+
     document.getElementById('question-label').textContent = questions[currentIndex];
     updateProgress();
-    
-    // Event listeners
+
     document.getElementById('submit-btn').addEventListener('click', nextQuestion);
     document.getElementById('input').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') nextQuestion();
     });
-    
+
     function updateProgress() {
-      document.getElementById('progress').textContent = 
-        `Question ${currentIndex + 1} of ${questions.length}`;
+      document.getElementById('progress').textContent = `Question ${currentIndex + 1} of ${questions.length}`;
     }
-    
+
     function showError(message) {
       const errorEl = document.getElementById('error');
       errorEl.textContent = message;
       errorEl.style.display = 'block';
       setTimeout(() => errorEl.style.display = 'none', 3000);
     }
-    
+
     function nextQuestion() {
       const input = document.getElementById('input');
       const value = input.value.trim();
       const currentQuestion = questions[currentIndex];
-      
+
       if (!value) {
         showError('Please enter a value');
         return;
       }
-      
+
       if (currentQuestion.includes('(1-10)') && (value < 1 || value > 10)) {
         showError('Please enter a value between 1 and 10');
         return;
       }
-      
+
       answers[currentQuestion] = value;
       currentIndex++;
       input.value = '';
-      
+
       if (currentIndex < questions.length) {
         document.getElementById('question-label').textContent = questions[currentIndex];
         updateProgress();
@@ -178,11 +176,11 @@
         submitAnswers();
       }
     }
-    
+
     async function submitAnswers() {
       document.getElementById('form-container').style.display = 'none';
       document.getElementById('progress').textContent = 'Analyzing your sleep patterns...';
-      
+
       try {
         const numericAnswers = {};
         for (const key in answers) {
@@ -194,31 +192,45 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(numericAnswers)
         });
-        
+
         if (!response.ok) {
           throw new Error(`Server returned ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (data.error) {
           showError(data.error);
           document.getElementById('form-container').style.display = 'block';
           return;
         }
-        
+
         document.getElementById('rf-result').textContent = 
           `Random Forest Prediction: ${data.RandomForest}`;
         document.getElementById('mlp-result').textContent = 
           `Neural Network Prediction: ${data.NeuralNetwork}`;
-        
+
         if (data.PredictedQuality) {
           document.getElementById('quality-result').textContent = 
             `Predicted Sleep Quality: ${data.PredictedQuality.toFixed(1)}/10`;
         }
-        
+
+        const lightSleepInfo = document.getElementById('light-sleep-info');
+        if (data.RandomForest.toLowerCase().includes("light")) {
+          lightSleepInfo.innerHTML = `
+            <strong>Cause:</strong> A light sleeper is a person who will wake up easily due to even small changes in their environment. These may include:<br>
+            - smells, such as when a person is cooking<br>
+            - sounds, even quiet ones<br>
+            - light, such as that from car headlights or outside streetlights<br><br>
+            <strong>Long-term Effect:</strong> Increased risk of various health conditions like cardiovascular disease, mental health issues, and even metabolic problems.
+          `;
+          lightSleepInfo.style.display = 'block';
+        } else {
+          lightSleepInfo.style.display = 'none';
+        }
+
         document.getElementById('result').style.display = 'block';
-        
+
       } catch (error) {
         console.error('Prediction error:', error);
         showError('Failed to get predictions. Please try again.');
