@@ -15,12 +15,12 @@
       align-items: center;
       min-height: 100vh;
     }
-    
+
     #app {
       width: 100%;
       max-width: 600px;
     }
-    
+
     .card {
       background: white;
       border-radius: 10px;
@@ -28,23 +28,23 @@
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       margin-bottom: 20px;
     }
-    
+
     .progress {
       color: #666;
       margin-bottom: 15px;
     }
-    
+
     .form-group {
       margin-bottom: 20px;
     }
-    
+
     label {
       display: block;
       margin-bottom: 8px;
       font-weight: 500;
       color: #333;
     }
-    
+
     input {
       width: 100%;
       padding: 10px;
@@ -52,7 +52,7 @@
       border-radius: 5px;
       font-size: 16px;
     }
-    
+
     button {
       background: #4a6fa5;
       color: white;
@@ -63,22 +63,42 @@
       width: 100%;
       font-size: 16px;
     }
-    
+
     button:hover {
       background: #3a5a8c;
     }
-    
+
     #result {
       display: none;
     }
-    
-    .result-item {
-      margin-bottom: 10px;
-      padding: 10px;
-      background: #f8f9fa;
-      border-radius: 5px;
+
+    .result-header {
+      font-size: 22px;
+      font-weight: bold;
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 20px;
     }
-    
+
+    .result-item {
+      margin-bottom: 15px;
+      padding: 15px;
+      background: #eaf4fc;
+      border-left: 5px solid #4a6fa5;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #333;
+    }
+
+    #final-sleep-result {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+      text-align: center;
+      background-color: #dfefff;
+      border-left: 5px solid #1d3557;
+    }
+
     .error {
       color: #dc3545;
       padding: 10px;
@@ -91,7 +111,7 @@
     <div class="card">
       <h2>🛏️ Sleep Type Classifier</h2>
       <div class="progress" id="progress">Question 1 of 12</div>
-      
+
       <div id="form-container">
         <div class="form-group">
           <label id="question-label"></label>
@@ -99,14 +119,13 @@
         </div>
         <button id="submit-btn">Next</button>
       </div>
-      
+
       <div class="error" id="error"></div>
     </div>
-    
+
     <div class="card" id="result">
-      <h3>Your Sleep Analysis</h3>
-      <div class="result-item" id="rf-result"></div>
-      <div class="result-item" id="mlp-result"></div>
+      <div class="result-header">Your Sleep Analysis</div>
+      <div class="result-item" id="final-sleep-result"></div>
       <div class="result-item" id="quality-result"></div>
       <div class="result-item" id="light-sleep-info" style="display: none;"></div>
     </div>
@@ -127,7 +146,7 @@
       "Stress Level (1-10)",
       "Sleep Quality (1-10)"
     ];
-    
+
     const answers = {};
     let currentIndex = 0;
 
@@ -205,10 +224,8 @@
           return;
         }
 
-        document.getElementById('rf-result').textContent = 
-          `Random Forest Prediction: ${data.RandomForest}`;
-        document.getElementById('mlp-result').textContent = 
-          `Neural Network Prediction: ${data.NeuralNetwork}`;
+        const finalSleepResult = document.getElementById('final-sleep-result');
+        finalSleepResult.textContent = `${data.RandomForest}`;
 
         if (data.PredictedQuality) {
           document.getElementById('quality-result').textContent = 
