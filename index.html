@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sleep Type Classifier</title>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -127,7 +131,8 @@
       <div class="result-header">Your Sleep Analysis</div>
       <div class="result-item" id="final-sleep-result"></div>
       <div class="result-item" id="quality-result"></div>
-      <div class="result-item" id="light-sleep-info" style="display: none;"></div>
+      <div class="result-item" id="sleep-info" style="display: none;"></div>
+      <canvas id="inputChart" style="margin-top: 20px; max-height: 300px;"></canvas>
     </div>
   </div>
 
@@ -224,29 +229,77 @@
           return;
         }
 
-        const finalSleepResult = document.getElementById('final-sleep-result');
-        finalSleepResult.textContent = `${data.RandomForest}`;
+        const sleepType = data.RandomForest;
+        document.getElementById('final-sleep-result').textContent = sleepType;
 
         if (data.PredictedQuality) {
-          document.getElementById('quality-result').textContent = 
+          document.getElementById('quality-result').textContent =
             `Predicted Sleep Quality: ${data.PredictedQuality.toFixed(1)}/10`;
         }
 
-        const lightSleepInfo = document.getElementById('light-sleep-info');
-        if (data.RandomForest.toLowerCase().includes("light")) {
-          lightSleepInfo.innerHTML = `
+        const infoBox = document.getElementById('sleep-info');
+        infoBox.style.display = 'block';
+
+        if (sleepType.toLowerCase().includes("light")) {
+          infoBox.innerHTML = `
             <strong>Cause:</strong> A light sleeper is a person who will wake up easily due to even small changes in their environment. These may include:<br>
             - smells, such as when a person is cooking<br>
             - sounds, even quiet ones<br>
             - light, such as that from car headlights or outside streetlights<br><br>
             <strong>Long-term Effect:</strong> Increased risk of various health conditions like cardiovascular disease, mental health issues, and even metabolic problems.
           `;
-          lightSleepInfo.style.display = 'block';
+        } else if (sleepType.toLowerCase().includes("deep")) {
+          infoBox.innerHTML = `
+            <strong>Benefits:</strong> Glucose metabolism in the brain increases during deep sleep, supporting short-term and long-term memory and overall learning.<br><br>
+            Deep sleep is also when the pituitary gland secretes important hormones, like human growth hormone, leading to growth and development of the body.<br><br>
+            Other benefits include:<br>
+            - Energy restoration<br>
+            - Cell regeneration<br>
+            - Increasing blood supply to muscles<br>
+            - Promoting growth and repair of tissues and bones<br>
+            - Strengthening the immune system
+          `;
+        } else if (sleepType.toLowerCase().includes("rem")) {
+          infoBox.innerHTML = `
+            <strong>REM Sleep:</strong> REM (Rapid Eye Movement) sleep is a distinct stage of sleep characterized by rapid eye movements and vivid dreams. It's believed to be crucial for memory consolidation, emotional processing, and brain development.<br><br>
+            <strong>Long-term Effect:</strong> Long-term REM sleep deprivation can lead to various health problems, including cognitive impairments, mood changes, and potentially increased risks of chronic diseases.
+          `;
         } else {
-          lightSleepInfo.style.display = 'none';
+          infoBox.style.display = 'none';
         }
 
+        // Show the result section
         document.getElementById('result').style.display = 'block';
+
+        // Show bar chart
+        const ctx = document.getElementById('inputChart').getContext('2d');
+        const labels = Object.keys(answers);
+        const values = Object.values(answers).map(Number);
+
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Your Inputs',
+              data: values,
+              backgroundColor: '#4a6fa5'
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              title: {
+                display: true,
+                text: 'Your Input Analysis'
+              }
+            },
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
 
       } catch (error) {
         console.error('Prediction error:', error);
